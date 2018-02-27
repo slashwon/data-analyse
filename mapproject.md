@@ -31,6 +31,7 @@ if 'fixme' in tag.attrib['k'] or \
 疏散人数
 车库
 黄南苑小区
+广场西侧路
 ```
 ##### 翻译成拼音.
 
@@ -54,13 +55,13 @@ update nodes_tags set key='name:kor' where id =273092476 and key='name:en'
             user = dao.my_execute("select user from nodes where uid = \'" +str(uid)+"\'")
             for u in user:
                 uid_user[uid].add(u[0])
-    
+
         wrong = {}
         for uid, userset in uid_user.items():
             # 如果uid对应的user不止一个，就认为是有问题的
             if len(userset)>1:
                 wrong[uid]=userset
-    
+
         p.pprint("有问题的uid：")
         p.pprint(wrong)
 ```
@@ -108,8 +109,64 @@ update nodes_tags set key='name:kor' where id =273092476 and key='name:en'
         .import waytag.csv ways_tags
         .mode list
     ```
-    
+
 ###数据库的查询结果
 * 唯一用户数量：1972
-* highway的数量：14068， shop的数量:1668
+* nodes中highway的数量：14068， shop的数量:1668
 * nodes中的数据个数:1304097, ways中的数据个数168667
+
+
+## 数据库操作语句
+
+```
+  # 创建名为openstreetmap的数据库
+  sqlite3 openstreetmap.db
+
+  #创建名为nodes的数据表
+  #类似语句创建nodes_tags,ways,ways_tags数据表
+    CREATE TABLE nodes (
+    id INTEGER PRIMARY KEY NOT NULL,
+    lat REAL,
+    lon REAL,
+    user TEXT,
+    uid INTEGER,
+    version INTEGER,
+    changeset INTEGER,
+    timestamp TEXT
+    );
+
+    #查询表的结构
+    .schema nodes
+
+    #查询时显示表头
+    .headers on
+
+    # 查看数据库下所有的数据表
+    .tables
+
+    #查看字段名
+    select * from nodes limit 1;
+
+    #导入csv文件到数据库
+    .mode csv
+    .import nodes.csv nodes
+    .mode list
+
+    #查询nodes数据库下的所有数据
+    select * from nodes;
+
+    #查询nodes下所有数据的个数
+    select count(*) from nodes;
+
+    #查询所有唯一用户的个数
+    select count(*) from (select distinct uid from nodes);
+
+    #查询nodes数据表下名称为highway的数据个数
+    select count(*) from nodes_tags where key='highway';
+```
+
+## 建议
+* 原始数据中有一些待完善的信息，就是FIXME字段。通过查询原始数据得知，这个字段对应的值，是不确定当前地址的名称或类型，有些道路已经补充了该信息，但是该FIXME仍然保留；还有一部分没有补充。建议更新此字段数据，并在确认地址正确之后删除该字段。
+
+## 好处和问题
+* 对于上述建议，带来的好处是减少了无效信息，提高了数据的有效性，节省过滤数据消耗的时间。但是有可能带来的问题是，由于更新了字段，可能会导致新插入的数据不符合字段类型要求.
